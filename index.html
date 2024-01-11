@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Платформер: Бегство мужа</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<audio id="jumpSound" src="jump_03.wav"></audio>
+<audio id="gameOverSound" src="bigchomp.mp3"></audio>
+<audio id="backgroundMusic" src="path_to_background_music.mp3" autoplay loop></audio>
+
+<body>
+<canvas id="gameCanvas" width="800" height="400"></canvas>
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+let gameOverFlag = false; // Флаг состояния игры
+
+const husbandImages = ['path_to_frame1.png', 'path_to_frame2.png', 'path_to_frame3.png'];
+let currentFrame = 0;
+const wifeAndChildImage = new Image();
+wifeAndChildImage.src = 'path_to_wife_and_child.png';
+window.addEventListener('click', function() {
+    const backgroundMusic = document.getElementById('backgroundMusic');
+    backgroundMusic.play();
+}, {once: true}); // Обработчик события выполнится только один раз
+
+const husband = {
+    x: 50,
+    y: canvas.height - 150,
+    width: 100,
+    height: 150,
+    speed: 5,
+    gravity: 0.5,
+    jumpPower: -14,
+    velocityY: 0,
+    onGround: false
+};
+
+const wifeAndChild = {
+    x: 0,
+    y: canvas.height - 150,
+    width: 150,
+    height: 150
+};
+
+const obstacles = [];
+const obstacleImage = new Image();
+obstacleImage.src = 'path_to_obstacle.png';
+
+function loadHusbandImages(callback) {
+    let loaded = 0;
+    husbandImages.forEach((src, index) => {
+        const image = new Image();
+        image.src = src;
+        image.onload = () => {
+            husbandImages[index] = image;
+            loaded++;
+            if (loaded === husbandImages.length) {
+                callback();
+            }
+        };
+    });
+}
+
+function addObstacle() {
+    const obstacle = {
+        x: canvas.width,
+        y: canvas.height - 100,
+        width: 50,
+        height: 50
+    };
+    obstacles.push(obstacle);
+}
+
+function gameOver() {
+        // Остановка фоновой музыки
+        const backgroundMusic = document.getElementById('backgroundMusic');
+    backgroundMusic.pause();
+
+    // Воспроизведение звука проигрыша
+    const gameOverSound = document.getElementById('gameOverSound');
+    gameOverSound.play();
+    gameOverFlag = true;
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // Отображение изображения проигрыша
+        ctx.drawImage(gameOverImage, 0, 0, canvas.width, canvas.height);
+    ctx.font = '30px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('ВЫ ПРОИГРАЛИ', canvas.width / 2, canvas.height / 2 + 80);
+    ctx.fillText(`ВЫ ПРОБЕЖАЛИ: ${Math.floor(meters)} МЕТРОВ`, canvas.width / 2, canvas.height / 2 + 110);
+    ctx.fillText(`НАЖМИТЕ ЧТОБЫ ПЕРЕЗАПУСТИТЬ`, canvas.width / 2, canvas.height / 2 + 140);
+}
+
+function checkCollisions() {
+    obstacles.forEach((obstacle, index) => {
+        if (husband.x < obstacle.x + obstacle.width &&
+            husband.x + husband.width > obstacle.x &&
+            husband.y < obstacle.y + obstacle.height &&
+            husband.y + husband.height > obstacle.y) {
+            gameOver();
+        }
+        if (obstacle.x + obstacle.width < 0) {
+            obstacles.splice(index, 1);
+        }
+    });
+}
+
+function updateObstacles() {
+    obstacles.forEach(obstacle => {
+        obstacle.x -= husband.speed;
+    });
+}
+
+// Инициализация переменной для счетчика метров
+let distance = 0; // Расстояние, пройденное игроком
+const maxDistance = 666; // Цель игры в метрах
+// Инициализация переменной для подсчета кадров и изображения проигрыша
+const gameOverImage = new Image();
+gameOverImage.src = 'path_to_game_over_image.png'; // Укажите путь к вашему изображению
+
+
+
+
+
+
+document.addEventListener('keydown', function(event) {
+    if (!gameOverFlag && (event.code === 'Space' || event.code === 'KeyW' || event.code === 'KeyC') && husband.onGround) {
+        husband.velocityY = husband.jumpPower;
+        husband.onGround = false;
+        document.getElementById('jumpSound').play(); // Воспроизведение звука прыжка
+    }
+});
+
+window.addEventListener('keydown', function(event) {
+    if (event.code === 'Space' || event.code === 'KeyW' || event.code === 'KeyC'){
+        
+    const backgroundMusic = document.getElementById('backgroundMusic');
+    backgroundMusic.play();}
+}, {once: true});
+
+
+canvas.addEventListener('click', function() {
+    if (gameOverFlag) {
+        document.location.reload(); // Перезапуск игры
+    }
+});
+
+// Инициализируем игру после загрузки изображений
+loadHusbandImages(startGame);
+
+function startGame() {
+    setInterval(addObstacle, 2000);
+    requestAnimationFrame(gameLoop);
+}
+
+function gameLoop() {
+    if (!gameOverFlag) {
+        update();
+        draw();
+        distance += (2 / 60); // Увеличиваем пройденное расстояние
+        if (distance >= maxDistance) {
+            alert('Поздравляем! Вы достигли цели!');
+            document.location.reload();
+        }
+        requestAnimationFrame(gameLoop);
+    }
+}
+// Инициализация переменной для счетчика метров
+let meters = 0;
+function update() {
+
+    if (!gameOverFlag) {
+        // Увеличиваем счетчик метров на 2/60 метра за кадр
+        meters += (2 / 60);
+        // Остальная логика функции update...
+    }
+    // Обновление Y
+    if (!husband.onGround) {
+        husband.velocityY += husband.gravity;
+        husband.y += husband.velocityY;
+    }
+
+    // Проверка, не ушел ли персонаж за пределы канваса сверху
+    if (husband.y < 0) {
+        husband.y = 0;
+        husband.velocityY = 0;
+    }
+
+    // Обновление X и препятствий
+    if (husband.x < canvas.width / 2) {
+        husband.x += husband.speed;
+    } else {
+        updateObstacles();
+    }
+
+    // Проверка на столкновения
+    checkCollisions();
+
+    // Обновление анимации
+    currentFrame = (currentFrame + 1) % husbandImages.length;
+
+    // Проверка на землю
+    if (husband.y + husband.height >= canvas.height) {
+        husband.y = canvas.height - husband.height;
+        husband.onGround = true;
+        husband.velocityY = 0;
+    } else {
+        husband.onGround = false;
+    }
+}
+
+function draw() {
+    if (!gameOverFlag) {
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Отображение пройденного расстояния и цели
+        ctx.fillStyle = 'black';
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText(`Расстояние: ${Math.floor(distance)} / ${maxDistance} м`, 20, 30);
+        ctx.drawImage(wifeAndChildImage, wifeAndChild.x, wifeAndChild.y, wifeAndChild.width, wifeAndChild.height);
+        ctx.drawImage(husbandImages[currentFrame], husband.x, husband.y, husband.width, husband.height);
+        obstacles.forEach(obstacle => {
+            ctx.drawImage(obstacleImage, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+        });
+        ctx.fillStyle = 'black';
+        ctx.font = '24px Arial';
+        ctx.textAlign = 'right';
+        ctx.fillText('Убегайте от жены с прицепом!!!', canvas.width - 10, 30);
+    }
+}
+</script>
+</body>
+</html>
+
